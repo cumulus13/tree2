@@ -1,0 +1,30 @@
+[[bin]]
+name = "tree2"
+path = "src/main.rs"
+
+[package]
+name = "tree2"
+version = "1.0.1"
+edition = "2021"
+description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
+authors = [ "Hadi Cahyadi <cumulus13@gmail.com>",]
+license = "MIT"
+repository = "https://github.com/cumulus13/tree2"
+documentation = "https://docs.rs/tree2"
+homepage = "https://github.com/cumulus13/tree2"
+readme = "README.md"
+keywords = [ "tree", "directory", "filesystem", "visualization", "cli",]
+categories = [ "command-line-utilities", "filesystem",]
+
+[features]
+default = [ "cli",]
+cli = [ "dep:clap",]
+
+[dependencies.clap]
+version = "4.0"
+features = [ "derive",]
+optional = true
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu",]
+rustdoc-args = [ "--cfg", "docsrs",]
