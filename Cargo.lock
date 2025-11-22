@@ -159,7 +159,7 @@ dependencies = [
 
 [[package]]
 name = "tree2"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "clap",
  "dunce",
