@@ -4,7 +4,7 @@ path = "src/main.rs"
 
 [package]
 name = "tree2"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
 authors = [ "Hadi Cahyadi <cumulus13@gmail.com>",]
@@ -20,10 +20,14 @@ categories = [ "command-line-utilities", "filesystem",]
 default = [ "cli",]
 cli = [ "dep:clap",]
 
+[dependencies]
+dunce = "1.0.5"
+
 [dependencies.clap]
 version = "4.0"
 features = [ "derive",]
 optional = true
+dunce = "1.0.4"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu",]

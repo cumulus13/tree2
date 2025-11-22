@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use clap::Parser;
+use dunce::canonicalize;
 
 // ANSI Color Codes with True Color (24-bit) and fallback
 const COLOR_RESET: &str = "\x1b[0m";
@@ -138,11 +139,36 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
     }
 }
 
+// fn main() {
+//     let cli = Cli::parse();
+
+//     let path = PathBuf::from(&cli.path);
+//     let abs_path = match path.canonicalize() {
+//         Ok(p) => p,
+//         Err(e) => {
+//             eprintln!("Error: {}", e);
+//             std::process::exit(1);
+//         }
+//     };
+
+//     let gitignore_excludes = load_gitignore(&abs_path);
+
+//     let config = Config {
+//         excludes: cli.exclude.into_iter().collect(),
+//         root_excludes: gitignore_excludes,
+//     };
+
+//     // Print the root directory in bright yellow
+//     let root_text = format!("📂 {}/", abs_path.display());
+//     println!("{}{}{}", COLOR_BRIGHT_YELLOW, root_text, COLOR_RESET);
+
+//     print_tree(&abs_path, "", &config);
+// }
 fn main() {
     let cli = Cli::parse();
 
     let path = PathBuf::from(&cli.path);
-    let abs_path = match path.canonicalize() {
+    let abs_path = match canonicalize(&path) {
         Ok(p) => p,
         Err(e) => {
             eprintln!("Error: {}", e);
@@ -151,13 +177,13 @@ fn main() {
     };
 
     let gitignore_excludes = load_gitignore(&abs_path);
-
+    
     let config = Config {
         excludes: cli.exclude.into_iter().collect(),
         root_excludes: gitignore_excludes,
     };
 
-    // Print the root directory in bright yellow
+    // Print root directory dengan warna kuning terang
     let root_text = format!("📂 {}/", abs_path.display());
     println!("{}{}{}", COLOR_BRIGHT_YELLOW, root_text, COLOR_RESET);
 
