@@ -10,11 +10,9 @@ use std::path::{Path, PathBuf};
 use clap::Parser;
 use dunce::canonicalize;
 
-// ANSI Color Codes with True Color (24-bit) and fallback
+// ANSI Color Codes with True Color (24-bit)
 const COLOR_RESET: &str = "\x1b[0m";
-// const COLOR_RED: &str = "\x1b[91m";
-// const COLOR_RED: &str = "\x1b[1;38;2;255;100;100m"; 
-const COLOR_RED: &str = "\x1b[1;97;41m"; 
+const COLOR_WHITE_ON_RED: &str = "\x1b[1;97;41m";
 const COLOR_ORANGE: &str = "\x1b[38;5;214m";
 
 // True Color (24-bit) ANSI codes - lighter color
@@ -25,7 +23,7 @@ const COLOR_LIGHT_MAGENTA_TRUE: &str = "\x1b[38;2;255;128;255m"; // Light magent
 #[derive(Parser)]
 #[command(name = "tree2")]
 #[command(about = "Print directory tree with file sizes, exclusions, and .gitignore support")]
-#[command(version)]
+#[command(version = get_version())]  // Custom version function
 struct Cli {
     #[arg(default_value = ".")]
     path: String,
@@ -37,6 +35,15 @@ struct Cli {
 struct Config {
     excludes: HashSet<String>,
     root_excludes: HashSet<String>,
+}
+
+// Custom version function
+fn get_version() -> &'static str {
+    concat!(
+        env!("CARGO_PKG_VERSION"), "\n",
+        "Author: Hadi Cahyadi <cumulus13@gmail.com>\n",
+        "Repository: https://github.com/cumulus13/tree2"
+    )
 }
 
 fn human_size(size: u64) -> String {
@@ -84,7 +91,7 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
         }
         Err(_) => {
             let permission_text = format!("{}└── 🔒 [Permission Denied]", prefix);
-            println!("{}{}{}", COLOR_RED, permission_text, COLOR_RESET);
+            println!("{}{}{}", COLOR_WHITE_ON_RED, permission_text, COLOR_RESET);
             return;
         }
     };
@@ -103,7 +110,7 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
         };
 
         if metadata.is_dir() {
-            // Folder in light yellow (#FFFF00)
+            // Folder dengan warna kuning terang (#FFFF00)
             let folder_text = format!("{}{}📁 {}/", prefix, connector, file_name);
             println!("{}{}{}", COLOR_BRIGHT_YELLOW, folder_text, COLOR_RESET);
 
@@ -120,50 +127,25 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
             let parts: Vec<&str> = size_str.split_whitespace().collect();
             let (size_value, size_unit) = (parts[0], parts[1]);
 
-            // File with light cyan color (#00FFFF)
+            // File dengan warna cyan terang (#00FFFF)
             print!("{}{}📄 {} (", COLOR_BRIGHT_CYAN, format!("{}{}", prefix, connector), file_name);
 
-            // Size value
+            // Size value - white on red jika size 0
             if size == 0 {
-                print!("{}{}", COLOR_RED, size_value);
+                print!("{}{}", COLOR_WHITE_ON_RED, size_value);
             } else {
                 print!("{}{}", COLOR_LIGHT_MAGENTA_TRUE, size_value);
             }
 
             print!("{} ", COLOR_RESET);
 
-            // Unit size in orange
+            // Size unit dengan warna orange
             print!("{}{}", COLOR_ORANGE, size_unit);
             println!("{})", COLOR_RESET);
         }
     }
 }
 
-// fn main() {
-//     let cli = Cli::parse();
-
-//     let path = PathBuf::from(&cli.path);
-//     let abs_path = match path.canonicalize() {
-//         Ok(p) => p,
-//         Err(e) => {
-//             eprintln!("Error: {}", e);
-//             std::process::exit(1);
-//         }
-//     };
-
-//     let gitignore_excludes = load_gitignore(&abs_path);
-
-//     let config = Config {
-//         excludes: cli.exclude.into_iter().collect(),
-//         root_excludes: gitignore_excludes,
-//     };
-
-//     // Print the root directory in bright yellow
-//     let root_text = format!("📂 {}/", abs_path.display());
-//     println!("{}{}{}", COLOR_BRIGHT_YELLOW, root_text, COLOR_RESET);
-
-//     print_tree(&abs_path, "", &config);
-// }
 fn main() {
     let cli = Cli::parse();
 
@@ -177,7 +159,7 @@ fn main() {
     };
 
     let gitignore_excludes = load_gitignore(&abs_path);
-    
+
     let config = Config {
         excludes: cli.exclude.into_iter().collect(),
         root_excludes: gitignore_excludes,
