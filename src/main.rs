@@ -9,20 +9,26 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use clap::Parser;
 
+// ANSI Color Codes with True Color (24-bit) and fallback
 const COLOR_RESET: &str = "\x1b[0m";
-const COLOR_RED: &str = "\x1b[91m";
-const COLOR_YELLOW: &str = "\x1b[93m";
-const COLOR_CYAN: &str = "\x1b[96m";
-const COLOR_LIGHT_MAGENTA: &str = "\x1b[38;5;213m";
+// const COLOR_RED: &str = "\x1b[91m";
+// const COLOR_RED: &str = "\x1b[1;38;2;255;100;100m"; 
+const COLOR_RED: &str = "\x1b[1;97;41m"; 
 const COLOR_ORANGE: &str = "\x1b[38;5;214m";
+
+// True Color (24-bit) ANSI codes - lighter color
+const COLOR_BRIGHT_YELLOW: &str = "\x1b[38;2;255;255;0m";  // #FFFF00
+const COLOR_BRIGHT_CYAN: &str = "\x1b[38;2;0;255;255m";    // #00FFFF
+const COLOR_LIGHT_MAGENTA_TRUE: &str = "\x1b[38;2;255;128;255m"; // Light magenta
 
 #[derive(Parser)]
 #[command(name = "tree2")]
 #[command(about = "Print directory tree with file sizes, exclusions, and .gitignore support")]
+#[command(version)]
 struct Cli {
     #[arg(default_value = ".")]
     path: String,
-    
+
     #[arg(short, long, num_args = 0..)]
     exclude: Vec<String>,
 }
@@ -35,7 +41,7 @@ struct Config {
 fn human_size(size: u64) -> String {
     let units = ["B", "KB", "MB", "GB", "TB"];
     let mut size = size as f64;
-    
+
     for unit in units.iter() {
         if size < 1024.0 {
             return format!("{:.2} {}", size, unit);
@@ -84,7 +90,7 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
 
     for (idx, entry) in entries.iter().enumerate() {
         let file_name = entry.file_name().to_string_lossy().to_string();
-        
+
         if should_exclude(&file_name, &config.excludes, &config.root_excludes) {
             continue;
         }
@@ -96,36 +102,36 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
         };
 
         if metadata.is_dir() {
-            // Folder dengan warna kuning
+            // Folder in light yellow (#FFFF00)
             let folder_text = format!("{}{}📁 {}/", prefix, connector, file_name);
-            println!("{}{}{}", COLOR_YELLOW, folder_text, COLOR_RESET);
-            
+            println!("{}{}{}", COLOR_BRIGHT_YELLOW, folder_text, COLOR_RESET);
+
             let new_prefix = if idx == entries.len() - 1 {
                 format!("{}    ", prefix)
             } else {
                 format!("{}│   ", prefix)
             };
-            
+
             print_tree(&entry.path(), &new_prefix, config);
         } else {
             let size = metadata.len();
             let size_str = human_size(size);
             let parts: Vec<&str> = size_str.split_whitespace().collect();
             let (size_value, size_unit) = (parts[0], parts[1]);
-            
-            // File dengan warna cyan
-            print!("{}{}📄 {} (", COLOR_CYAN, format!("{}{}", prefix, connector), file_name);
-            
+
+            // File with light cyan color (#00FFFF)
+            print!("{}{}📄 {} (", COLOR_BRIGHT_CYAN, format!("{}{}", prefix, connector), file_name);
+
             // Size value
             if size == 0 {
                 print!("{}{}", COLOR_RED, size_value);
             } else {
-                print!("{}{}", COLOR_LIGHT_MAGENTA, size_value);
+                print!("{}{}", COLOR_LIGHT_MAGENTA_TRUE, size_value);
             }
-            
+
             print!("{} ", COLOR_RESET);
-            
-            // Size unit dengan warna orange
+
+            // Unit size in orange
             print!("{}{}", COLOR_ORANGE, size_unit);
             println!("{})", COLOR_RESET);
         }
@@ -134,7 +140,7 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
 
 fn main() {
     let cli = Cli::parse();
-    
+
     let path = PathBuf::from(&cli.path);
     let abs_path = match path.canonicalize() {
         Ok(p) => p,
@@ -145,15 +151,15 @@ fn main() {
     };
 
     let gitignore_excludes = load_gitignore(&abs_path);
-    
+
     let config = Config {
         excludes: cli.exclude.into_iter().collect(),
         root_excludes: gitignore_excludes,
     };
 
-    // Print root directory
+    // Print the root directory in bright yellow
     let root_text = format!("📂 {}/", abs_path.display());
-    println!("{}{}{}", COLOR_YELLOW, root_text, COLOR_RESET);
-    
+    println!("{}{}{}", COLOR_BRIGHT_YELLOW, root_text, COLOR_RESET);
+
     print_tree(&abs_path, "", &config);
 }

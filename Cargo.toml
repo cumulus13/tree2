@@ -4,7 +4,7 @@ path = "src/main.rs"
 
 [package]
 name = "tree2"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
 authors = [ "Hadi Cahyadi <cumulus13@gmail.com>",]
