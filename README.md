@@ -2,7 +2,9 @@
 
 A high-performance directory tree visualization tool written in Rust with colors, emojis, and gitignore support. Available as both CLI tool and library crate.
 
-![Tree2 Rust Example](https://via.placeholder.com/800x400.png?text=Tree2+Rust+Directory+Listing+Example)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cumulus13/tree2/master/tree2.png" alt="Tree2">
+</p>
 
 ## Features
 

@@ -4,7 +4,7 @@ path = "src/main.rs"
 
 [package]
 name = "tree2"
-version = "1.0.6"
+version = "1.0.7"
 edition = "2021"
 description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
 authors = [ "Hadi Cahyadi <cumulus13@gmail.com>",]
@@ -15,6 +15,7 @@ homepage = "https://github.com/cumulus13/tree2"
 readme = "README.md"
 keywords = [ "tree", "directory", "filesystem", "visualization", "cli",]
 categories = [ "command-line-utilities", "filesystem",]
+exclude = [ "build.bat", "gitignore_backup/", ".pt/", "__version__.py", "target/", "tree2.exe", "tree2.sublime-project", "tree2.sublime-workspace",]
 
 [dependencies]
 dunce = "1.0.4"

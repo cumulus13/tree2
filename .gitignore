@@ -4,3 +4,11 @@
 
 # Added entries (1 items)
 *sublime*
+
+# Added entries (3 items)
+*.exe
+target/
+gitignore_backup/
+
+# Added entries (1 items)
+build.bat
