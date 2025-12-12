@@ -6,6 +6,17 @@ A high-performance directory tree visualization tool written in Rust with colors
   <img src="https://raw.githubusercontent.com/cumulus13/tree2/master/tree2.png" alt="Tree2">
 </p>
 
+## 🎦 Demo
+
+<div align="center">
+  <a href="https://youtu.be/1BrUiQWi47Y">
+    <img src="https://i9.ytimg.com/vi_webp/1BrUiQWi47Y/mqdefault.webp?sqp=CLyA8MkG&rs=AOn4CLDK-YxnbjSj94eEnGR5YpQSSVmK1g" alt="How to use mks - tree2 -pt" style="width:100%;">
+  </a>
+  <br>
+  <a href="https://youtu.be/1BrUiQWi47Y">Demo</a>
+</div>
+
+
 ## Features
 
 - 🎨 **Colorful Output**: Beautiful colored output with emojis for better visualization
