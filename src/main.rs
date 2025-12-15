@@ -7,8 +7,10 @@
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use clap::Parser;
+use clap::{Parser, ArgAction};
 use dunce::canonicalize;
+use cli_clipboard::{ClipboardContext, ClipboardProvider};
+use clap_version_flag::colorful_version;
 
 // ANSI Color Codes with True Color (24-bit)
 const COLOR_RESET: &str = "\x1b[0m";
@@ -23,13 +25,25 @@ const COLOR_LIGHT_MAGENTA_TRUE: &str = "\x1b[38;2;255;128;255m"; // Light magent
 #[derive(Parser)]
 #[command(name = "tree2")]
 #[command(about = "Print directory tree with file sizes, exclusions, and .gitignore support")]
-#[command(version = get_version())]  // Custom version function
+#[command(disable_version_flag = true)]
 struct Cli {
+    #[arg(short = 'V', long = "version", action = ArgAction::SetTrue)]
+    version: bool,
+
     #[arg(default_value = ".")]
     path: String,
 
+    /// Exclude directories/files (exact match only)
     #[arg(short, long, num_args = 0..)]
     exclude: Vec<String>,
+
+    /// Copy result to clipboard
+    #[arg(short = 'c', long)]
+    clipboard: bool,
+
+    // /// Print version information
+    // #[arg(short = 'V', long)]
+    // version: bool,
 }
 
 struct Config {
@@ -37,14 +51,12 @@ struct Config {
     root_excludes: HashSet<String>,
 }
 
-// Custom version function
-fn get_version() -> &'static str {
-    concat!(
-        env!("CARGO_PKG_VERSION"), "\n",
-        "Author: Hadi Cahyadi <cumulus13@gmail.com>\n",
-        "Repository: https://github.com/cumulus13/tree2"
-    )
-}
+// fn get_version_info() -> String {
+//     format!(
+//         "{}\nAuthor: Hadi Cahyadi <cumulus13@gmail.com>\nRepository: https://github.com/cumulus13/tree2",
+//         env!("CARGO_PKG_VERSION")
+//     )
+// }
 
 fn human_size(size: u64) -> String {
     let units = ["B", "KB", "MB", "GB", "TB"];
@@ -77,12 +89,17 @@ fn load_gitignore(path: &Path) -> HashSet<String> {
     }
 }
 
+// Fixed: exact match only, tidak akan exclude .github jika exclude .git
 fn should_exclude(entry: &str, excludes: &HashSet<String>, root_excludes: &HashSet<String>) -> bool {
-    excludes.iter().any(|ex| entry == ex || entry.starts_with(ex)) ||
-    root_excludes.iter().any(|ex| entry == ex || entry.starts_with(ex))
+    excludes.contains(entry) || root_excludes.contains(entry)
 }
 
-fn print_tree(path: &Path, prefix: &str, config: &Config) {
+// fn strip_ansi(text: &str) -> String {
+//     let re = regex::Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+//     re.replace_all(text, "").to_string()
+// }
+
+fn print_tree(path: &Path, prefix: &str, config: &Config, output: &mut String, use_colors: bool) {
     let entries = match fs::read_dir(path) {
         Ok(entries) => {
             let mut entries: Vec<_> = entries.collect::<Result<Vec<_>, _>>().unwrap_or_default();
@@ -90,8 +107,15 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
             entries
         }
         Err(_) => {
-            let permission_text = format!("{}└── 🔒 [Permission Denied]", prefix);
-            println!("{}{}{}", COLOR_WHITE_ON_RED, permission_text, COLOR_RESET);
+            let permission_text = format!("{}└── 🔒 [Permission Denied]\n", prefix);
+            if use_colors {
+                let colored = format!("{}{}{}", COLOR_WHITE_ON_RED, permission_text, COLOR_RESET);
+                print!("{}", colored);
+                output.push_str(&permission_text);
+            } else {
+                print!("{}", permission_text);
+                output.push_str(&permission_text);
+            }
             return;
         }
     };
@@ -110,9 +134,15 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
         };
 
         if metadata.is_dir() {
-            // Folder dengan warna kuning terang (#FFFF00)
-            let folder_text = format!("{}{}📁 {}/", prefix, connector, file_name);
-            println!("{}{}{}", COLOR_BRIGHT_YELLOW, folder_text, COLOR_RESET);
+            let folder_text = format!("{}{}📁 {}/\n", prefix, connector, file_name);
+            
+            if use_colors {
+                let colored = format!("{}{}{}", COLOR_BRIGHT_YELLOW, folder_text, COLOR_RESET);
+                print!("{}", colored);
+            } else {
+                print!("{}", folder_text);
+            }
+            output.push_str(&folder_text);
 
             let new_prefix = if idx == entries.len() - 1 {
                 format!("{}    ", prefix)
@@ -120,34 +150,51 @@ fn print_tree(path: &Path, prefix: &str, config: &Config) {
                 format!("{}│   ", prefix)
             };
 
-            print_tree(&entry.path(), &new_prefix, config);
+            print_tree(&entry.path(), &new_prefix, config, output, use_colors);
         } else {
             let size = metadata.len();
             let size_str = human_size(size);
             let parts: Vec<&str> = size_str.split_whitespace().collect();
             let (size_value, size_unit) = (parts[0], parts[1]);
 
-            // File dengan warna cyan terang (#00FFFF)
-            print!("{}{}📄 {} (", COLOR_BRIGHT_CYAN, format!("{}{}", prefix, connector), file_name);
-
-            // Size value - white on red jika size 0
-            if size == 0 {
-                print!("{}{}", COLOR_WHITE_ON_RED, size_value);
+            let file_line = format!("{}{}📄 {} ({} {})\n", prefix, connector, file_name, size_value, size_unit);
+            
+            if use_colors {
+                print!("{}{}📄 {} (", COLOR_BRIGHT_CYAN, format!("{}{}", prefix, connector), file_name);
+                
+                if size == 0 {
+                    print!("{}{}", COLOR_WHITE_ON_RED, size_value);
+                } else {
+                    print!("{}{}", COLOR_LIGHT_MAGENTA_TRUE, size_value);
+                }
+                print!("{} ", COLOR_RESET);
+                print!("{}{}", COLOR_ORANGE, size_unit);
+                println!("{})", COLOR_RESET);
             } else {
-                print!("{}{}", COLOR_LIGHT_MAGENTA_TRUE, size_value);
+                print!("{}", file_line);
             }
-
-            print!("{} ", COLOR_RESET);
-
-            // Size unit dengan warna orange
-            print!("{}{}", COLOR_ORANGE, size_unit);
-            println!("{})", COLOR_RESET);
+            
+            output.push_str(&file_line);
         }
     }
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() == 2 && (args[1] == "-V" || args[1] == "--version") {
+        let version = colorful_version!();
+        version.print_and_exit();
+    }
+    
     let cli = Cli::parse();
+    let version_str = colorful_version!();
+
+    // Handle version flag manually
+    if cli.version {
+        // println!("{}", get_version_info());
+        println!("{}", version_str);
+        std::process::exit(0);
+    }
 
     let path = PathBuf::from(&cli.path);
     let abs_path = match canonicalize(&path) {
@@ -165,9 +212,32 @@ fn main() {
         root_excludes: gitignore_excludes,
     };
 
-    // Print root directory dengan warna kuning terang
-    let root_text = format!("📂 {}/", abs_path.display());
-    println!("{}{}{}", COLOR_BRIGHT_YELLOW, root_text, COLOR_RESET);
+    let mut output = String::new();
+    let use_colors = !cli.clipboard;
 
-    print_tree(&abs_path, "", &config);
+    // Print the root directory
+    let root_text = format!("📂 {}/\n", abs_path.display());
+    
+    if use_colors {
+        let colored = format!("{}{}{}", COLOR_BRIGHT_YELLOW, root_text, COLOR_RESET);
+        print!("{}", colored);
+    } else {
+        print!("{}", root_text);
+    }
+    output.push_str(&root_text);
+
+    print_tree(&abs_path, "", &config, &mut output, use_colors);
+
+    // Copy to clipboard if requested
+    if cli.clipboard {
+        match ClipboardContext::new() {
+            Ok(mut ctx) => {
+                match ctx.set_contents(output.clone()) {
+                    Ok(_) => eprintln!("\n✅ Tree output copied to clipboard!"),
+                    Err(e) => eprintln!("\n❌ Failed to copy to clipboard: {}", e),
+                }
+            }
+            Err(e) => eprintln!("\n❌ Failed to access clipboard: {}", e),
+        }
+    }
 }

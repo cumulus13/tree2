@@ -4,7 +4,7 @@ bin = [
 
 [package]
 name = "tree2"
-version = "1.0.8"
+version = "1.0.9"
 edition = "2021"
 description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
 authors = [
@@ -44,6 +44,9 @@ targets = [
 
 [dependencies]
 dunce = "1.0.4"
+clap-version-flag = "1.0.5"
+cli-clipboard = "0.4"
+regex = "1.10"
 
 [dependencies.clap]
 version = "4.0"

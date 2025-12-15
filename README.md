@@ -10,19 +10,19 @@ A high-performance directory tree visualization tool written in Rust with colors
 
 <div align="center">
   <a href="https://youtu.be/1BrUiQWi47Y">
-    <img src="https://i9.ytimg.com/vi_webp/1BrUiQWi47Y/mqdefault.webp?sqp=CLyA8MkG&rs=AOn4CLDK-YxnbjSj94eEnGR5YpQSSVmK1g" alt="How to use mks - tree2 -pt" style="width:100%;">
+    <img src="https://i.ytimg.com/an_webp/1BrUiQWi47Y/mqdefault_6s.webp?du=3000&sqp=CLzY-skG&rs=AOn4CLAfcZjbkZ_1Zw1Yn-fAFJuaUKa88w" alt="How to use mks - tree2 -pt" style="width:100%;">
   </a>
   <br>
   <a href="https://youtu.be/1BrUiQWi47Y">Demo</a>
 </div>
-
 
 ## Features
 
 - 🎨 **Colorful Output**: Beautiful colored output with emojis for better visualization
 - 📊 **File Sizes**: Human-readable file sizes with color-coded values
 - 🔒 **Permission Handling**: Gracefully handles permission denied errors
-- 📋 **Exclusion Support**: Supports `.gitignore` files and custom exclude patterns
+- 📋 **Exclusion Support**: Supports `.gitignore` files and custom exclude patterns (exact match only)
+- 📋 **Clipboard Support**: Copy tree output directly to clipboard with `-c` flag
 - ⚡ **Blazing Fast**: Optimized Rust implementation for maximum performance
 - 📦 **Library & CLI**: Available as both command-line tool and Rust library
 - 🦀 **Memory Safe**: Rust's safety guarantees ensure reliability
@@ -30,11 +30,11 @@ A high-performance directory tree visualization tool written in Rust with colors
 
 ## Color Scheme
 
-- **Folders**: Yellow (#FFFF00) with 📁 emoji
-- **Files**: Cyan (#00FFFF) with 📄 emoji  
-- **Size Values**: Light magenta (red if size is 0)
-- **Size Units**: Orange suffix
-- **Permission Denied**: Red with 🔒 emoji
+- **Folders**: Bright Yellow (#FFFF00) with 📁 emoji
+- **Files**: Bright Cyan (#00FFFF) with 📄 emoji  
+- **Size Values**: Light magenta (#FF80FF) - White on red background if size is 0
+- **Size Units**: Orange (#FFB380)
+- **Permission Denied**: White on red background with 🔒 emoji
 
 ## Installation
 
@@ -67,32 +67,15 @@ tree2
 
 # Show specific directory
 tree2 /path/to/directory
+
+# Copy output to clipboard
+tree2 -c
+
+# Show version info
+tree2 -V
 ```
 
-### With Exclusions
-
-```bash
-# Exclude patterns
-tree2 -e node_modules,.git,target,dist
-
-# Using long form with space-separated patterns
-tree2 --exclude __pycache__ *.tmp temp
-```
-
-### Examples
-
-```bash
-# Typical Rust project directory
-tree2 -e target,.git,node_modules
-
-# With multiple exclude patterns
-tree2 -e target .git node_modules __pycache__ dist build
-
-# Specific path with exclusions
-tree2 /path/to/project -e target,.git,*.log
-```
-
-## Command Line Options
+### Command Line Options
 
 ```
 Usage: tree2 [OPTIONS] [PATH]
@@ -101,9 +84,75 @@ Arguments:
   [PATH]  Target directory [default: .]
 
 Options:
-  -e, --exclude <EXCLUDE>...    Exclude patterns or directory names
+  -e, --exclude <EXCLUDE>...   Exclude directories/files (exact match only)
+  -c, --clipboard              Copy result to clipboard
+  -V, --version                Print version information
   -h, --help                   Print help
-  -V, --version                Print version
+```
+
+### Options Details
+
+| Flag | Long Form | Description |
+|------|-----------|-------------|
+| `-e` | `--exclude` | Exclude specific directories/files (exact match only, multiple values supported) |
+| `-c` | `--clipboard` | Copy tree output to clipboard (without ANSI colors) |
+| `-V` | `--version` | Show version, author, and repository information |
+| `-h` | `--help` | Display help message |
+
+### Important: Exact Match Exclusion
+
+The `-e` flag uses **exact match only**. This means:
+- `-e .git` will exclude **only** `.git` folder
+- `-e .git` will **NOT** exclude `.github` folder
+- Each exclusion must match the exact name
+
+### With Exclusions
+
+```bash
+# Exclude single pattern
+tree2 -e target
+
+# Exclude multiple patterns (space-separated)
+tree2 -e target .git node_modules
+
+# Exclude multiple patterns (multiple -e flags)
+tree2 -e target -e .git -e node_modules
+
+# With clipboard
+tree2 -e target -e .git -c
+```
+
+### Examples
+
+```bash
+# Typical Rust project directory
+tree2 -e target -e .git
+
+# Python project
+tree2 -e __pycache__ -e .venv -e dist
+
+# Node.js project
+tree2 -e node_modules -e dist -e .next
+
+# With clipboard for sharing
+tree2 -e target -e node_modules -c
+
+# Specific path with exclusions
+tree2 /path/to/project -e target -e .git
+
+
+
+```
+Usage: tree2 [OPTIONS] [PATH]
+
+Arguments:
+  [PATH]  [default: .]
+
+Options:
+  -e, --exclude [<EXCLUDE>...]  Exclude directories/files (exact match only)
+  -c, --clipboard               Copy result to clipboard
+  -V, --version                 Print version information
+  -h, --help                    Print help
 ```
 
 ## Output Example
@@ -119,6 +168,14 @@ Options:
 ├── 📄 README.md (4.50 KB)
 └── 🔒 [Permission Denied]
 ```
+
+### Clipboard Output
+
+When using `-c` flag, the output copied to clipboard is **plain text without ANSI color codes**, making it perfect for:
+- Pasting into documentation
+- Sharing in emails or chat
+- Including in Markdown files
+- Code reviews and discussions
 
 ## Library Usage
 
@@ -166,52 +223,17 @@ fn main() {
 }
 ```
 
-## Project Structure
-
-```
-tree2/
-├── Cargo.toml          # Rust package manifest
-├── LICENSE             # MIT License
-├── README.md           # This file
-└── src/
-    ├── lib.rs          # Library crate
-    ├── main.rs         # Binary crate
-    ├── config.rs       # Configuration structures
-    ├── tree.rs         # Tree generation logic
-    └── colors.rs       # Color and styling utilities
-```
-
-## Cargo.toml (for crates.io)
+## Dependencies
 
 ```toml
-[package]
-name = "tree2"
-version = "0.1.0"
-edition = "2021"
-description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
-authors = ["Hadi Cahyadi <cumulus13@gmail.com>"]
-license = "MIT"
-repository = "https://github.com/cumulus13/tree2"
-documentation = "https://docs.rs/tree2"
-homepage = "https://github.com/cumulus13/tree2"
-readme = "README.md"
-keywords = ["tree", "directory", "filesystem", "visualization", "cli"]
-categories = ["command-line-utilities", "filesystem"]
-
 [dependencies]
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
+dunce = "1.0"
+cli-clipboard = "0.4"
+clap-version-flag = "1.0.5"
 
-[features]
-default = ["cli"]
-cli = ["clap"]
-
-[[bin]]
-name = "tree2"
-path = "src/main.rs"
-
-[package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
 ```
+
 
 ## Building from Source
 
@@ -233,8 +255,8 @@ cargo build --release
 # Run tests
 cargo test
 
-# Run benchmarks (if any)
-cargo bench
+# Run with arguments
+cargo run --release -- -e target -c
 ```
 
 ## Performance
@@ -243,7 +265,27 @@ The Rust version is optimized for performance:
 - Zero-cost abstractions
 - Minimal memory allocations
 - Efficient directory traversal
-- Lazy evaluation where possible
+- Fast pattern matching with HashSet
+- Optimized sorting algorithms
+
+## Key Improvements in Latest Version
+
+### 🔧 Fixed: Exact Match Exclusion
+Previously, `-e .git` would also exclude `.github` and `.gitignore`. Now it uses **exact match only**:
+```rust
+// Old (incorrect): .git excludes .github too
+entry.starts_with(ex)  // ❌
+
+// New (correct): exact match only
+excludes.contains(entry)  // ✅
+```
+
+### 📋 New: Clipboard Support
+Copy tree output with `-c` flag:
+- Automatic ANSI color stripping
+- Plain text output for universal compatibility
+- Success/error feedback messages
+
 
 ## Contributing
 
@@ -279,6 +321,15 @@ If you encounter any issues or have questions:
 2. Create a new issue with detailed description
 3. Contact: cumulus13@gmail.com
 4. Documentation: [docs.rs/tree2](https://docs.rs/tree2)
+
+## Changelog
+
+### v1.0.9
+- ✅ Fixed exact match exclusion (`.git` no longer excludes `.github`)
+- ✨ Added clipboard support with `-c` flag
+- 📝 Improved version info with `-V` flag
+- 🎨 Better color scheme with true color support
+- ⚡ Performance optimizations
 
 ---
 
