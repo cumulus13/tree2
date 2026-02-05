@@ -12,3 +12,9 @@ gitignore_backup/
 
 # Added entries (1 items)
 build.bat
+
+# Added entries (1 items)
+temp
+
+# Added entries (1 items)
+test/

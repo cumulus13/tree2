@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "tree2"
-version = "1.0.9"
+version = "1.0.10"
 dependencies = [
  "clap",
  "clap-version-flag",

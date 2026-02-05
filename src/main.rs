@@ -11,6 +11,7 @@ use clap::{Parser, ArgAction};
 use dunce::canonicalize;
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use clap_version_flag::colorful_version;
+use regex::Regex;
 
 // ANSI Color Codes with True Color (24-bit)
 const COLOR_RESET: &str = "\x1b[0m";
@@ -41,22 +42,99 @@ struct Cli {
     #[arg(short = 'c', long)]
     clipboard: bool,
 
-    // /// Print version information
-    // #[arg(short = 'V', long)]
-    // version: bool,
+    /// Ignore file(s) to use (e.g., .gitignore, .dockerignore). If not specified, all ignore files including .pt will be used
+    #[arg(short = 'i', long, num_args = 0..)]
+    ignore_file: Vec<String>,
+
+    /// Exception patterns (supports wildcards and regex). Patterns matching these will NOT be excluded
+    #[arg(short = 'e', long = "exception", num_args = 0..)]
+    exceptions: Vec<String>,
+
+    /// Show hidden system folders (.git, .svn, etc.) - by default these are always hidden
+    #[arg(short = 'a', long = "all")]
+    show_all: bool,
 }
 
 struct Config {
     excludes: HashSet<String>,
     root_excludes: HashSet<String>,
+    exception_patterns: Vec<Pattern>,
 }
 
-// fn get_version_info() -> String {
-//     format!(
-//         "{}\nAuthor: Hadi Cahyadi <cumulus13@gmail.com>\nRepository: https://github.com/cumulus13/tree2",
-//         env!("CARGO_PKG_VERSION")
-//     )
-// }
+enum Pattern {
+    Wildcard(String),
+    Regex(Regex),
+    Exact(String),
+}
+
+impl Pattern {
+    fn matches(&self, text: &str) -> bool {
+        match self {
+            Pattern::Wildcard(pattern) => wildcard_match(pattern, text),
+            Pattern::Regex(re) => re.is_match(text),
+            Pattern::Exact(exact) => text == exact,
+        }
+    }
+
+    fn from_string(s: &str) -> Result<Self, String> {
+        // If it starts with regex: prefix, treat as regex
+        if let Some(pattern) = s.strip_prefix("regex:") {
+            match Regex::new(pattern) {
+                Ok(re) => Ok(Pattern::Regex(re)),
+                Err(e) => Err(format!("Invalid regex '{}': {}", pattern, e)),
+            }
+        }
+        // If it contains * or ?, treat as wildcard
+        else if s.contains('*') || s.contains('?') {
+            Ok(Pattern::Wildcard(s.to_string()))
+        }
+        // Otherwise, exact match
+        else {
+            Ok(Pattern::Exact(s.to_string()))
+        }
+    }
+}
+
+fn wildcard_match(pattern: &str, text: &str) -> bool {
+    let pattern_chars: Vec<char> = pattern.chars().collect();
+    let text_chars: Vec<char> = text.chars().collect();
+    
+    wildcard_match_recursive(&pattern_chars, &text_chars, 0, 0)
+}
+
+fn wildcard_match_recursive(pattern: &[char], text: &[char], p_idx: usize, t_idx: usize) -> bool {
+    if p_idx == pattern.len() {
+        return t_idx == text.len();
+    }
+
+    match pattern[p_idx] {
+        '*' => {
+            // Try matching zero or more characters
+            for i in t_idx..=text.len() {
+                if wildcard_match_recursive(pattern, text, p_idx + 1, i) {
+                    return true;
+                }
+            }
+            false
+        }
+        '?' => {
+            // Match exactly one character
+            if t_idx < text.len() {
+                wildcard_match_recursive(pattern, text, p_idx + 1, t_idx + 1)
+            } else {
+                false
+            }
+        }
+        c => {
+            // Match exact character
+            if t_idx < text.len() && text[t_idx] == c {
+                wildcard_match_recursive(pattern, text, p_idx + 1, t_idx + 1)
+            } else {
+                false
+            }
+        }
+    }
+}
 
 fn human_size(size: u64) -> String {
     let units = ["B", "KB", "MB", "GB", "TB"];
@@ -71,13 +149,13 @@ fn human_size(size: u64) -> String {
     format!("{:.2} PB", size)
 }
 
-fn load_gitignore(path: &Path) -> HashSet<String> {
-    let gitignore_path = path.join(".gitignore");
-    if !gitignore_path.exists() {
+fn load_ignore_file(path: &Path, filename: &str) -> HashSet<String> {
+    let ignore_path = path.join(filename);
+    if !ignore_path.exists() {
         return HashSet::new();
     }
 
-    match fs::read_to_string(gitignore_path) {
+    match fs::read_to_string(ignore_path) {
         Ok(content) => {
             content.lines()
                 .map(|line| line.trim())
@@ -89,15 +167,97 @@ fn load_gitignore(path: &Path) -> HashSet<String> {
     }
 }
 
-// Fixed: exact match only, tidak akan exclude .github jika exclude .git
-fn should_exclude(entry: &str, excludes: &HashSet<String>, root_excludes: &HashSet<String>) -> bool {
-    excludes.contains(entry) || root_excludes.contains(entry)
+fn load_all_ignore_files(path: &Path, specific_files: Option<&[String]>, show_all: bool) -> HashSet<String> {
+    let mut all_excludes = HashSet::new();
+
+    // Default excludes - always ignored unless --all flag is used
+    if !show_all {
+        let default_excludes = vec![
+            ".git",
+            ".svn",
+            ".hg",
+            ".bzr",
+            "_darcs",
+            "CVS",
+            ".DS_Store",
+            "Thumbs.db",
+            "desktop.ini",
+        ];
+        
+        // Add default excludes
+        for exclude in default_excludes {
+            all_excludes.insert(exclude.to_string());
+        }
+    }
+
+    // List of common ignore files
+    let ignore_files = vec![
+        ".gitignore",
+        ".dockerignore",
+        ".npmignore",
+        ".eslintignore",
+        ".prettierignore",
+        ".hgignore",
+        ".terraformignore",
+        ".helmignore",
+        ".gcloudignore",
+        ".cfignore",
+        ".slugignore",
+        ".pt",  // Default .pt file
+    ];
+
+    if let Some(files) = specific_files {
+        // If specific files are provided, only load those
+        for filename in files {
+            let excludes = load_ignore_file(path, filename);
+            all_excludes.extend(excludes);
+        }
+    } else {
+        // Load all ignore files
+        for filename in ignore_files {
+            let excludes = load_ignore_file(path, filename);
+            all_excludes.extend(excludes);
+        }
+    }
+
+    all_excludes
 }
 
-// fn strip_ansi(text: &str) -> String {
-//     let re = regex::Regex::new(r"\x1b\[[0-9;]*m").unwrap();
-//     re.replace_all(text, "").to_string()
-// }
+fn should_exclude(
+    entry: &str, 
+    excludes: &HashSet<String>, 
+    root_excludes: &HashSet<String>,
+    exception_patterns: &[Pattern]
+) -> bool {
+    // Check if matches any exception pattern - if yes, don't exclude
+    for pattern in exception_patterns {
+        if pattern.matches(entry) {
+            return false;
+        }
+    }
+
+    // Check manual excludes (exact match)
+    if excludes.contains(entry) {
+        return true;
+    }
+
+    // Check ignore file patterns (support wildcards)
+    for pattern in root_excludes {
+        // If pattern contains wildcard, use wildcard matching
+        if pattern.contains('*') || pattern.contains('?') {
+            if wildcard_match(pattern, entry) {
+                return true;
+            }
+        } else {
+            // Exact match
+            if entry == pattern {
+                return true;
+            }
+        }
+    }
+
+    false
+}
 
 fn print_tree(path: &Path, prefix: &str, config: &Config, output: &mut String, use_colors: bool) {
     let entries = match fs::read_dir(path) {
@@ -120,14 +280,19 @@ fn print_tree(path: &Path, prefix: &str, config: &Config, output: &mut String, u
         }
     };
 
-    for (idx, entry) in entries.iter().enumerate() {
+    // Filter out excluded entries first
+    let filtered_entries: Vec<_> = entries
+        .iter()
+        .filter(|entry| {
+            let file_name = entry.file_name().to_string_lossy().to_string();
+            !should_exclude(&file_name, &config.excludes, &config.root_excludes, &config.exception_patterns)
+        })
+        .collect();
+
+    for (idx, entry) in filtered_entries.iter().enumerate() {
         let file_name = entry.file_name().to_string_lossy().to_string();
 
-        if should_exclude(&file_name, &config.excludes, &config.root_excludes) {
-            continue;
-        }
-
-        let connector = if idx == entries.len() - 1 { "└── " } else { "├── " };
+        let connector = if idx == filtered_entries.len() - 1 { "└── " } else { "├── " };
         let metadata = match entry.metadata() {
             Ok(meta) => meta,
             Err(_) => continue,
@@ -144,7 +309,7 @@ fn print_tree(path: &Path, prefix: &str, config: &Config, output: &mut String, u
             }
             output.push_str(&folder_text);
 
-            let new_prefix = if idx == entries.len() - 1 {
+            let new_prefix = if idx == filtered_entries.len() - 1 {
                 format!("{}    ", prefix)
             } else {
                 format!("{}│   ", prefix)
@@ -191,7 +356,6 @@ fn main() {
 
     // Handle version flag manually
     if cli.version {
-        // println!("{}", get_version_info());
         println!("{}", version_str);
         std::process::exit(0);
     }
@@ -205,11 +369,28 @@ fn main() {
         }
     };
 
-    let gitignore_excludes = load_gitignore(&abs_path);
+    // Load ignore files
+    let ignore_file_excludes = if cli.ignore_file.is_empty() {
+        load_all_ignore_files(&abs_path, None, cli.show_all)
+    } else {
+        load_all_ignore_files(&abs_path, Some(&cli.ignore_file), cli.show_all)
+    };
+
+    // Parse exception patterns
+    let mut exception_patterns = Vec::new();
+    for exception in &cli.exceptions {
+        match Pattern::from_string(exception) {
+            Ok(pattern) => exception_patterns.push(pattern),
+            Err(e) => {
+                eprintln!("Warning: {}", e);
+            }
+        }
+    }
 
     let config = Config {
         excludes: cli.exclude.into_iter().collect(),
-        root_excludes: gitignore_excludes,
+        root_excludes: ignore_file_excludes,
+        exception_patterns,
     };
 
     let mut output = String::new();

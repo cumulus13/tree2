@@ -4,9 +4,9 @@ bin = [
 
 [package]
 name = "tree2"
-version = "1.0.9"
+version = "1.0.10"
 edition = "2021"
-description = "A beautiful and feature-rich directory tree visualization tool with colors and emojis"
+description = "A beautiful and feature-rich directory tree visualization tool with colors, emojis, and comprehensive ignore file support"
 authors = [
     "Hadi Cahyadi <cumulus13@gmail.com>",
 ]
@@ -35,6 +35,8 @@ exclude = [
     "tree2.exe",
     "tree2.sublime-project",
     "tree2.sublime-workspace",
+    "temp",
+    "test",
 ]
 
 [package.metadata.docs.rs]
