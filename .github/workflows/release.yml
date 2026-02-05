@@ -115,20 +115,6 @@ jobs:
             bin_name: tree2
             asset_suffix: macos-arm64
             use_cross: false
-          
-          # FreeBSD x86_64
-          - os: ubuntu-latest
-            target: x86_64-unknown-freebsd
-            bin_name: tree2
-            asset_suffix: freebsd-amd64
-            use_cross: true
-          
-          # NetBSD x86_64
-          - os: ubuntu-latest
-            target: x86_64-unknown-netbsd
-            bin_name: tree2
-            asset_suffix: netbsd-amd64
-            use_cross: true
 
     steps:
     - uses: actions/checkout@v4
@@ -154,12 +140,12 @@ jobs:
       if: ${{ !matrix.use_cross }}
       run: cargo build --release --target ${{ matrix.target }}
 
-    - name: Strip binaries (Linux/macOS/BSD)
+    - name: Strip binaries (Linux/macOS)
       if: matrix.os != 'windows-latest'
       run: |
         strip target/${{ matrix.target }}/release/${{ matrix.bin_name }} || true
 
-    - name: Create tarballs (Linux/macOS/BSD)
+    - name: Create tarballs (Linux/macOS)
       if: matrix.os != 'windows-latest'
       run: |
         cd target/${{ matrix.target }}/release
