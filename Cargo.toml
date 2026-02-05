@@ -4,7 +4,7 @@ bin = [
 
 [package]
 name = "tree2"
-version = "1.0.11"
+version = "1.0.12"
 edition = "2021"
 description = "A beautiful and feature-rich directory tree visualization tool with colors, emojis, and comprehensive ignore file support"
 authors = [
