@@ -1,0 +1,40 @@
+{
+  "_comment": "Tree2 Configuration File (JSON)",
+  "_location_windows": "%USERPROFILE%\\.tree2\\tree2.json or %APPDATA%\\.tree2\\tree2.json",
+  "_location_unix": "~/.tree2/tree2.json or ~/.config/.tree2/tree2.json",
+  
+  "default_excludes": [
+    "target",
+    "build",
+    "dist",
+    "out",
+    "node_modules",
+    "vendor",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".idea",
+    ".vscode",
+    "*.sublime-project",
+    "*.sublime-workspace",
+    "*.tmp",
+    "*.cache",
+    ".cache",
+    ".DS_Store",
+    "Thumbs.db"
+  ],
+  
+  "ignore_files": [
+    ".gitignore",
+    ".dockerignore",
+    ".pt"
+  ],
+  
+  "exceptions": [
+    "*.md",
+    "README*",
+    "LICENSE*",
+    "*.toml",
+    "*.json"
+  ]
+}

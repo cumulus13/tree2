@@ -1,0 +1,65 @@
+# Tree2 Configuration File (TOML)
+# Place this file in:
+#   Windows: %USERPROFILE%\.tree2\tree2.toml or %APPDATA%\.tree2\tree2.toml
+#   Linux/Mac: ~/.tree2/tree2.toml or ~/.config/.tree2/tree2.toml
+
+# Default folders/files to exclude (in addition to .git, .svn, etc.)
+default_excludes = [
+    # Build directories
+    "target",
+    "build",
+    "dist",
+    "out",
+    
+    # Dependencies
+    "node_modules",
+    "vendor",
+    ".venv",
+    "venv",
+    "__pycache__",
+    
+    # IDE files (additional to default)
+    ".idea",
+    ".vscode",
+    "*.sublime-project",
+    "*.sublime-workspace",
+    
+    # Temporary files
+    "*.tmp",
+    "*.cache",
+    ".cache",
+    
+    # OS files (additional to default)
+    ".DS_Store",
+    "Thumbs.db",
+]
+
+# Ignore files to automatically load
+# If not specified, uses default list (.gitignore, .dockerignore, .pt, etc.)
+ignore_files = [
+    ".gitignore",
+    ".dockerignore",
+    ".pt",
+    # Add custom ignore files here
+    # ".myignore",
+]
+
+# Exception patterns - files/folders to NEVER exclude
+# Supports wildcards (*) and regex (prefix with "regex:")
+exceptions = [
+    # Keep all markdown files even if ignored
+    "*.md",
+    
+    # Keep README files
+    "README*",
+    
+    # Keep license files
+    "LICENSE*",
+    
+    # Keep important config files
+    "*.toml",
+    "*.json",
+    
+    # Regex example: keep all test files
+    # "regex:^test.*\\.rs$",
+]

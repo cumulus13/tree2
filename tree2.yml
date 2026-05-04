@@ -1,0 +1,48 @@
+# Tree2 Configuration File (YAML)
+# Place this file in:
+#   Windows: %USERPROFILE%\.tree2\tree2.yml or %APPDATA%\.tree2\tree2.yml
+#   Linux/Mac: ~/.tree2/tree2.yml or ~/.config/.tree2/tree2.yml
+
+# Default folders/files to exclude
+default_excludes:
+  # Build directories
+  - target
+  - build
+  - dist
+  - out
+  
+  # Dependencies
+  - node_modules
+  - vendor
+  - .venv
+  - venv
+  - __pycache__
+  
+  # IDE files
+  - .idea
+  - .vscode
+  - "*.sublime-project"
+  - "*.sublime-workspace"
+  
+  # Temporary files
+  - "*.tmp"
+  - "*.cache"
+  - .cache
+  
+  # OS files
+  - .DS_Store
+  - Thumbs.db
+
+# Ignore files to automatically load
+ignore_files:
+  - .gitignore
+  - .dockerignore
+  - .pt
+
+# Exception patterns
+exceptions:
+  - "*.md"
+  - "README*"
+  - "LICENSE*"
+  - "*.toml"
+  - "*.json"
