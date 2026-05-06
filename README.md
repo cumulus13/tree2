@@ -1,6 +1,6 @@
 # Tree2
 
-A high-performance directory tree visualization tool written in Rust with colors, emojis, and comprehensive ignore file support. Available as both CLI tool and library crate.
+A high-performance directory tree visualization tool written in Rust with colors, emojis, and comprehensive ignore file support. Available as both CLI tool and library crate. **Fully compatible with Linux `tree` command options.**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cumulus13/tree2/master/tree2.png" alt="Tree2">
@@ -24,6 +24,7 @@ A high-performance directory tree visualization tool written in Rust with colors
 - 🔒 **Default System Exclusions**: `.git`, `.svn`, and other system folders hidden by default
 - 🎯 **Exception Patterns**: Wildcard and regex support to override ignore rules
 - 📋 **Clipboard Support**: Copy tree output directly to clipboard with `-c` flag
+- 🐧 **Linux `tree` Compatible**: Supports all major flags from the Linux `tree` command
 - ⚡ **Blazing Fast**: Optimized Rust implementation for maximum performance
 - 🌐 **Cross-Platform**: Works on Windows, macOS, Linux (x86_64, ARM64, ARMv7, i686)
 - 📦 **Library & CLI**: Available as both command-line tool and Rust library
@@ -32,9 +33,11 @@ A high-performance directory tree visualization tool written in Rust with colors
 ## 🎨 Color Scheme
 
 - **Folders**: Bright Yellow (#FFFF00) with 📁 emoji
-- **Files**: Bright Cyan (#00FFFF) with 📄 emoji  
-- **Size Values**: Light magenta (#FF80FF) - White on red background if size is 0
+- **Files**: Bright Cyan (#00FFFF) with 📄 emoji
+- **Symlinks**: Bright Green (#00FF80) with `->` target path
+- **Size Values**: Light magenta (#FF80FF) — White on red background if size is 0
 - **Size Units**: Orange (#FFB380)
+- **Meta info** (permissions, date, owner): Gray (#A0A0A0)
 - **Permission Denied**: White on red background with 🔒 emoji
 
 ## 🛠️ Installation
@@ -93,10 +96,11 @@ cargo install --path .
 
 Tree2 supports **11 different platforms**:
 
-### Operating Systems
-- 🐧 **Linux**: x86_64, ARM64, ARMv7, i686 (+ musl variants)
-- 🪟 **Windows**: x86_64, ARM64, i686
-- 🍎 **macOS**: Intel (x86_64) and Apple Silicon (ARM64)
+| OS | Architectures |
+|---|---|
+| 🐧 Linux | x86_64, ARM64, ARMv7, i686 (+ musl variants) |
+| 🪟 Windows | x86_64, ARM64, i686 |
+| 🍎 macOS | Intel (x86_64), Apple Silicon (ARM64) |
 
 For detailed platform information, see [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md).
 
@@ -111,7 +115,7 @@ tree2
 # Show specific directory
 tree2 /path/to/directory
 
-# Copy output to clipboard
+# Copy output to clipboard (plain text, no ANSI codes)
 tree2 -c
 
 # Show system folders (.git, etc.)
@@ -119,127 +123,195 @@ tree2 -a
 
 # Show version info
 tree2 -V
+
+# Show help
+tree2 --help
 ```
 
-### Command Line Options
+> **Note:** `-h` is `--human-readable` (Linux `tree` compatibility), not `--help`. Use `--help` for the help screen.
+
+## 📋 Full Options Reference
 
 ```
 Usage: tree2 [OPTIONS] [PATH]
 
 Arguments:
   [PATH]  Target directory [default: .]
-
-Options:
-  -a, --all                         Show hidden system folders (.git, .svn, etc.)
-  -e, --exception <PATTERNS>...     Exception patterns (wildcards, regex, exact match)
-  -i, --ignore-file <FILES>...      Specific ignore files to use
-  -c, --clipboard                   Copy result to clipboard
-  -x, --exclude <NAMES>...          Exclude directories/files (exact match)
-  -V, --version                     Print version information
-  -h, --help                        Print help
 ```
 
-### New Features in v2.0
+### Original tree2 flags
 
-#### 🌟 Multiple Ignore Files Support
+| Flag | Description |
+|---|---|
+| `-V`, `--version` | Print version information |
+| `-e`, `--exclude <NAME>...` | Exclude directories/files by exact name |
+| `-c`, `--clipboard` | Copy output to clipboard (plain text) |
+| `-i`, `--ignore-file <FILE>...` | Specific ignore file(s) to use |
+| `--exception <PATTERN>...` | Exception patterns — matching entries will NOT be excluded (supports wildcards and `regex:` prefix) |
+| `-a`, `--all` | Show hidden system folders (`.git`, `.svn`, etc.) |
 
-Tree2 automatically loads ALL common ignore files:
-- `.gitignore`, `.dockerignore`, `.npmignore`
-- `.eslintignore`, `.prettierignore`, `.hgignore`
-- `.terraformignore`, `.helmignore`, `.gcloudignore`
-- `.cfignore`, `.slugignore`
-- **`.pt`** (custom ignore file for tree2)
+### Listing & filtering (Linux `tree` compatible)
 
-**Important:** All patterns in ignore files support wildcards (`*` and `?`). For example, `*.exe` in `.gitignore` will match all `.exe` files.
+| Flag | Description |
+|---|---|
+| `-d`, `--dirs-only` | List directories only |
+| `-f`, `--full-path` | Print full path prefix for each entry |
+| `-l`, `--follow-links` | Follow symbolic links like directories |
+| `-L`, `--level <N>` | Max display depth |
+| `-P`, `--pattern <GLOB>` | Only show files matching wildcard pattern (e.g. `"*.rs"`) |
+| `-I`, `--ignore-pattern <GLOB>` | Exclude files matching wildcard pattern (e.g. `"*.o"`) |
+| `--ignore-case` | Case-insensitive `-P` / `-I` matching |
+| `--dirsfirst` | List directories before files |
+| `-t`, `--sort-time` | Sort by last modification time (oldest first) |
+| `-r`, `--reverse` | Reverse sort order |
+| `--filelimit <N>` | Don't descend directories with more than N entries |
+| `--prune` | Omit empty directories from output |
+| `-x`, `--xdev` | Stay on current filesystem (don't cross mount points) — Unix only |
 
-#### 🛡️ Default System Folder Exclusion
+### File metadata display (Linux `tree` compatible)
 
-Tree2 **automatically hides** these system folders and files by default:
-- `.git`, `.svn`, `.hg`, `.bzr`, `_darcs`, `CVS`
-- `.DS_Store`, `Thumbs.db`, `desktop.ini`
+| Flag | Description |
+|---|---|
+| `-p`, `--protections` | Print permissions like `[drwxr-xr-x]` |
+| `-u`, `--owner` | Print file owner name / UID — Unix only |
+| `-g`, `--group` | Print group name / GID — Unix only |
+| `-s`, `--size` | Print size in raw bytes |
+| `-h`, `--human-readable` | Human-readable size (already the default; explicit flag for compat) |
+| `--si` | Human-readable with SI units (powers of 1000) |
+| `-D`, `--date` | Print last modification date/time |
+| `-F`, `--classify` | Append type indicators: `/` dirs, `*` executables, `@` symlinks, `\|` FIFOs, `=` sockets |
+| `--du` | Report directory size as accumulation of all contained file sizes |
+| `--inodes` | Print inode number — Unix only |
+| `--device` | Print device number — Unix only |
 
-**To show these folders:**
+### Output control (Linux `tree` compatible)
+
+| Flag | Description |
+|---|---|
+| `--noreport` | Suppress the final `N directories, M files` summary |
+| `-o`, `--output <FILE>` | Write output to file (plain text, no ANSI codes) |
+| `-n`, `--nocolor` | Disable all ANSI colors |
+| `-q`, `--quote-chars` | Replace non-printable characters with `?` |
+| `-Q`, `--quote` | Wrap filenames in double quotes |
+
+## 💡 Usage Examples
+
+### Depth & filtering
 ```bash
-tree2 -a           # Show all including system folders
-tree2 --all        # Same as above
+# Show only 2 levels deep
+tree2 -L 2
+
+# Show only Rust source files
+tree2 -P "*.rs"
+
+# Show only directories, 3 levels deep
+tree2 -d -L 3
+
+# Exclude all .o files
+tree2 -I "*.o"
+
+# Case-insensitive pattern match
+tree2 -P "*.RS" --ignore-case
 ```
 
-#### 🎯 Exception Patterns (New!)
-
-Exclude patterns from being ignored using the `-e` or `--exception` flag. Supports three types:
-
-**Wildcard Patterns:**
+### Sorting
 ```bash
-# Keep all .log files even if ignored
-tree2 -e "*.log"
+# Directories first
+tree2 --dirsfirst
 
-# Keep specific pattern
-tree2 -e "important_*.txt"
+# Sort by modification time, newest last
+tree2 -t
 
-# Multiple patterns
-tree2 -e "*.log" "*.tmp" "debug_*"
+# Reverse order
+tree2 -r
+
+# Newest first (reverse time sort)
+tree2 -t -r
 ```
 
-**Exact Match:**
+### Metadata display
 ```bash
-# Keep specific file/folder
-tree2 -e "node_modules"
-tree2 -e ".env"
+# Show permissions
+tree2 -p
+
+# Show permissions + owner + group
+tree2 -p -u -g
+
+# Show modification date
+tree2 -D
+
+# Show size in bytes
+tree2 -s
+
+# Show size with SI units (1000-based)
+tree2 --si
+
+# Show accumulated directory sizes
+tree2 --du
+
+# Show inode numbers (Unix only)
+tree2 --inodes
+
+# Show all metadata at once
+tree2 -p -u -g -D --inodes
 ```
 
-**Regex Patterns:**
-Use `regex:` prefix for complex patterns:
+### Output
 ```bash
-# Keep all files ending with numbers
-tree2 -e "regex:.*\d+$"
+# Save to file (no ANSI codes)
+tree2 -o output.txt
 
-# Keep files matching pattern
-tree2 -e "regex:^(test|spec)_.*\.rs$"
+# Copy to clipboard
+tree2 -c
+
+# No colors
+tree2 -n
+
+# Suppress file/dir count summary
+tree2 --noreport
+
+# Quote all filenames
+tree2 -Q
 ```
 
-#### 📝 Selective Ignore File Usage
-
-You can specify which ignore files to use:
-
+### Combining flags
 ```bash
-# Use only .gitignore
-tree2 -i .gitignore
+# Use only .gitignore, keep all .log files
+tree2 -i .gitignore --exception "*.log"
 
-# Use both .gitignore and .dockerignore
-tree2 -i .gitignore .dockerignore
+# Show all files matching pattern, dirs first, with dates
+tree2 -P "*.toml" --dirsfirst -D
 
-# Use custom ignore file
-tree2 -i .myignore
+# Complex metadata view with depth limit
+tree2 -p -u -D -L 3 --dirsfirst
+
+# Stay on current filesystem only (Unix)
+tree2 -x
+
+# Full path + classify indicators
+tree2 -f -F
 ```
 
-### Advanced Examples
-
+### Exception patterns
 ```bash
-# Use only .gitignore but keep all .log files
-tree2 -i .gitignore -e "*.log"
+# Wildcard: keep all .log files even if in .gitignore
+tree2 --exception "*.log"
 
-# Use multiple ignore files with exceptions
-tree2 -i .gitignore .dockerignore -e "*.log" "*.md" "important_*"
+# Exact match: keep node_modules
+tree2 --exception "node_modules"
 
-# Exclude specific folders but keep exceptions
-tree2 --exclude target build -e "target/debug/important_file.txt"
+# Regex pattern: keep test/spec Rust files
+tree2 --exception "regex:^(test|spec)_.*\.rs$"
 
-# Complex regex exception
-tree2 -e "regex:^(test|spec).*\.(rs|py)$"
-
-# Show all including .git
-tree2 -a
-
-# Combined flags
-tree2 -a -i .gitignore -e "*.log"
+# Multiple exceptions
+tree2 --exception "*.log" "*.md" "important_*"
 ```
 
-### 📄 Creating a .pt File
+## 📄 Creating a .pt File
 
 The `.pt` file works like `.gitignore` but is specific to tree2:
 
 ```bash
-# Create .pt file
 cat > .pt << EOF
 # Custom ignores for tree2
 *.tmp
@@ -251,19 +323,6 @@ EOF
 # tree2 will automatically use it
 tree2
 ```
-
-## 💡 Pattern Matching Examples
-
-### Wildcard Examples:
-- `*.log` - matches any file ending with .log
-- `test_*` - matches any file starting with test_
-- `*_backup.*` - matches any file with _backup before extension
-- `?.txt` - matches single character followed by .txt
-
-### Regex Examples:
-- `regex:.*\d+$` - matches files ending with numbers
-- `regex:^test.*\.rs$` - matches Rust test files
-- `regex:(debug|test)_.*` - matches files starting with debug_ or test_
 
 ## 📋 Output Example
 
@@ -278,26 +337,30 @@ tree2
 ├── 📄 README.md (4.50 KB)
 └── 🔒 [Permission Denied]
 
-# .git folder is hidden by default ✓
+2 directories, 4 files
+```
+
+### With metadata flags (`-p -u -D`)
+```
+📂 /home/user/project/
+├── [-rwxr-xr-x] alice [2025-11-22 14:30] 📁 src/
+│   └── [-rw-r--r--] alice [2025-11-20 09:15] 📄 main.rs (12.45 KB)
+└── [-rw-r--r--] alice [2025-11-21 11:00] 📄 Cargo.toml (1.20 KB)
+
+1 directory, 2 files
 ```
 
 ### Clipboard Output
 
-When using `-c` flag, the output copied to clipboard is **plain text without ANSI color codes**, making it perfect for:
-- Pasting into documentation
-- Sharing in emails or chat
-- Including in Markdown files
-- Code reviews and discussions
+When using `-c`, the output copied to clipboard is **plain text without ANSI color codes**, making it perfect for pasting into documentation, emails, Markdown files, or code reviews.
 
 ## 🚀 Performance
 
-The Rust version is optimized for performance:
 - Zero-cost abstractions
 - Minimal memory allocations
 - Efficient directory traversal
 - Fast pattern matching with HashSet
 - Optimized wildcard matching algorithm
-- Concurrent ignore file loading
 
 ## 📚 Library Usage
 
@@ -318,7 +381,7 @@ fn main() {
         .path(".")
         .excludes(vec!["target", ".git"])
         .build();
-    
+
     tree.print();
 }
 ```
@@ -337,10 +400,10 @@ fn main() {
         show_all: false,
         max_depth: Some(5),
     };
-    
+
     let tree = TreeBuilder::from_config(config).build();
     tree.print();
-    
+
     // Or get the output as string
     let output = tree.to_string();
     println!("{}", output);
@@ -378,13 +441,14 @@ cargo build --release
 # Run tests
 cargo test
 
-# Run with arguments
-cargo run --release -- -e target -c
+# Run clippy
+cargo clippy -- -D warnings
+
+# Check formatting
+cargo fmt --all -- --check
 ```
 
 ### Cross-Compilation
-
-To build for a different platform:
 
 ```bash
 # Install target
@@ -421,7 +485,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 [![Buy Me a Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/cumulus13)
 
 [![Donate via Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/cumulus13)
- 
+
 [Support me on Patreon](https://www.patreon.com/cumulus13)
 
 ## 💬 Support
@@ -435,7 +499,37 @@ If you encounter any issues or have questions:
 
 ## 📝 Changelog
 
-### v2.0.12 (Latest)
+### v1.0.14 (Latest)
+- ✨ **Added**: Full Linux `tree` command compatibility
+- ✨ **Added**: `-L/--level` max depth flag
+- ✨ **Added**: `-d/--dirs-only` directories-only listing
+- ✨ **Added**: `-f/--full-path` full path prefix display
+- ✨ **Added**: `-P/--pattern` and `-I/--ignore-pattern` wildcard filtering
+- ✨ **Added**: `--ignore-case` for case-insensitive pattern matching
+- ✨ **Added**: `--dirsfirst` sort order
+- ✨ **Added**: `-t/--sort-time` and `-r/--reverse` sort flags
+- ✨ **Added**: `-p/--protections` permissions display (Unix)
+- ✨ **Added**: `-u/--owner` and `-g/--group` metadata (Unix)
+- ✨ **Added**: `-s/--size` raw bytes, `-h/--human-readable`, `--si` size flags
+- ✨ **Added**: `-D/--date` modification date display
+- ✨ **Added**: `-F/--classify` type indicator suffixes
+- ✨ **Added**: `--filelimit` directory entry limit
+- ✨ **Added**: `--prune` empty directory pruning
+- ✨ **Added**: `--du` accumulated directory sizes
+- ✨ **Added**: `--noreport` suppress summary line
+- ✨ **Added**: `-o/--output` write to file
+- ✨ **Added**: `-n/--nocolor` disable ANSI colors
+- ✨ **Added**: `-q/--quote-chars` and `-Q/--quote` filename quoting
+- ✨ **Added**: `-x/--xdev` stay on current filesystem (Unix)
+- ✨ **Added**: `--inodes` and `--device` inode/device display (Unix)
+- ✨ **Added**: Summary line `N directories, M files` at end of output
+- ✨ **Added**: Symlink display with `->` target in bright green
+- ✨ **Added**: Meta-info prefix colored in gray
+- 🐛 **Fixed**: Cross-platform build — all Unix-specific APIs gated with `#[cfg(unix)]`
+- 🐛 **Fixed**: All clippy warnings (`is_multiple_of`, `sort_by_key`, argument count)
+- ⚠️ **Breaking**: `-h` is now `--human-readable` (Linux tree compat). Use `--help` for help.
+
+### v1.0.13
 - 🐛 **Fixed**: Wildcard pattern matching in ignore files (`.gitignore`, `.pt`, etc.)
 - 🐛 **Fixed**: Tree connector logic for correct display
 - ✨ **Added**: Default system folder exclusion (`.git`, `.svn`, etc.)
