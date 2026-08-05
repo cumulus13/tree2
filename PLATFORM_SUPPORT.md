@@ -15,6 +15,20 @@ Tree2 is built for **14 different platforms** covering all major operating syste
 | **ARMv7** | `armv7-unknown-linux-gnueabihf` | `tree2-linux-armv7.tar.gz` | Raspberry Pi 2/3 |
 | **i686 (32-bit)** | `i686-unknown-linux-gnu` | `tree2-linux-i686.tar.gz` | Legacy 32-bit systems |
 
+### 🤖 Android
+
+| Architecture | Target Triple | Binary Name | Notes |
+|--------------|---------------|-------------|-------|
+| **ARM64/aarch64** | `aarch64-linux-android` | `tree2-android-arm64.tar.gz` | Most modern phones/tablets, Termux `aarch64` |
+| **ARMv7** | `armv7-linux-androideabi` | `tree2-android-armv7.tar.gz` | Older 32-bit devices, Termux/Kali NetHunter `armv7l` |
+| **x86_64** | `x86_64-linux-android` | `tree2-android-x86_64.tar.gz` | Emulators, x86 tablets |
+| **i686 (32-bit)** | `i686-linux-android` | `tree2-android-i686.tar.gz` | Older 32-bit emulators/devices |
+
+> **Clipboard note:** `-c`/`--clipboard` uses `termux-clipboard-set` on Android
+> (via the [Termux:API](https://wiki.termux.com/wiki/Termux:API) add-on:
+> `pkg install termux-api` + the companion app), since desktop clipboard
+> crates have no Android backend.
+
 ### 🪟 Windows
 
 | Architecture | Target Triple | Binary Name | Notes |

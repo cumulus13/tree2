@@ -4,7 +4,7 @@ bin = [
 
 [package]
 name = "tree2"
-version = "1.0.14"
+version = "1.0.15"
 edition = "2021"
 description = "A beautiful and feature-rich directory tree visualization tool with colors, emojis, and comprehensive ignore file support"
 authors = [
@@ -47,7 +47,6 @@ targets = [
 [dependencies]
 dunce = "1.0.4"
 clap-version-flag = "1.0.5"
-cli-clipboard = "0.4"
 regex = "1.10"
 
 [dependencies.clap]
@@ -55,3 +54,13 @@ version = "4.0"
 features = [
     "derive",
 ]
+
+# cli-clipboard 0.4 has no Android backend (its own cfg gates exclude
+# target_os = "android" from every platform it supports), so pulling it
+# in unconditionally breaks any Android build (Termux, Kali Nethunter,
+# GNURoot, native aarch64-linux-android, etc.) with:
+#   error[E0433]: cannot find type `ClipboardContext` in this scope
+# On Android we shell out to `termux-clipboard-set` instead (see
+# src/main.rs), so the dependency is only pulled in on other targets.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+cli-clipboard = "0.4"

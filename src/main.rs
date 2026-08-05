@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 
 use clap::{ArgAction, Parser};
 use clap_version_flag::colorful_version;
+#[cfg(not(target_os = "android"))]
 use cli_clipboard::{ClipboardContext, ClipboardProvider};
 use dunce::canonicalize;
 use regex::Regex;
@@ -1078,12 +1079,56 @@ fn main() {
     }
 
     if cli.clipboard {
-        match ClipboardContext::new() {
-            Ok(mut ctx) => match ctx.set_contents(output.clone()) {
-                Ok(_) => eprintln!("\n✅ Tree output copied to clipboard!"),
-                Err(e) => eprintln!("\n❌ Failed to copy to clipboard: {}", e),
-            },
-            Err(e) => eprintln!("\n❌ Failed to access clipboard: {}", e),
+        copy_to_clipboard(&output);
+    }
+}
+
+/// Copy `text` to the system clipboard.
+///
+/// `cli-clipboard` 0.4 has no Android backend (X11/Wayland-style clipboard
+/// access isn't available to native code on Android without going through
+/// the JVM), so on Android we shell out to `termux-clipboard-set` from the
+/// Termux:API add-on instead. This covers both a plain Termux install and
+/// Termux-hosted environments like Kali NetHunter, whose `uname` still
+/// reports `target_os = "android"` regardless of armv7l/aarch64 arch.
+#[cfg(not(target_os = "android"))]
+fn copy_to_clipboard(text: &str) {
+    match ClipboardContext::new() {
+        Ok(mut ctx) => match ctx.set_contents(text.to_string()) {
+            Ok(_) => eprintln!("\n✅ Tree output copied to clipboard!"),
+            Err(e) => eprintln!("\n❌ Failed to copy to clipboard: {}", e),
+        },
+        Err(e) => eprintln!("\n❌ Failed to access clipboard: {}", e),
+    }
+}
+
+#[cfg(target_os = "android")]
+fn copy_to_clipboard(text: &str) {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let result = Command::new("termux-clipboard-set")
+        .stdin(Stdio::piped())
+        .spawn()
+        .and_then(|mut child| {
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin.write_all(text.as_bytes())?;
+            }
+            child.wait()
+        });
+
+    match result {
+        Ok(status) if status.success() => {
+            eprintln!("\n✅ Tree output copied to clipboard (via termux-clipboard-set)!")
         }
+        Ok(status) => eprintln!(
+            "\n❌ termux-clipboard-set exited with status {}. Is the Termux:API app installed on the device?",
+            status
+        ),
+        Err(e) => eprintln!(
+            "\n❌ Failed to run termux-clipboard-set: {}. Install it with `pkg install termux-api` \
+             and install the companion Termux:API app from F-Droid/Play Store.",
+            e
+        ),
     }
 }
